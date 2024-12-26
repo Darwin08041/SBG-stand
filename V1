@@ -1,1 +1,121 @@
-print("in development, heh...")
+local placeholder
+local adminuser = "standuser23746956"
+local username = adminuser
+local mode = "peaceful"
+local cd = 0
+local range = 50
+local floating = true
+
+-- Behavior loops
+placeholder = game:GetService("RunService").RenderStepped:Connect(function()
+	if game:GetService("Players"):FindFirstChild(username) then
+		local plr = game:GetService("Players"):WaitForChild(username)
+		if plr.Character:FindFirstChild("HumanoidRootPart") then
+			local root = game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+			local floatpart = plr.Character:FindFirstChild("HumanoidRootPart")
+			
+			if root and floatpart and floating == true then
+				root.CFrame = CFrame.new(floatpart.Position.X-floatpart.CFrame.LookVector.X*5,floatpart.Position.Y+1,floatpart.Position.Z-floatpart.CFrame.LookVector.Z*5)
+				root.CFrame = CFrame.lookAt(root.Position, floatpart.Position)
+				root.Velocity = Vector3.new(0,0,0)
+			end
+			
+			if mode == "peaceful" then end
+			if mode == "attack" then
+				for i,v in pairs(workspace:WaitForChild("Live"):GetChildren()) do
+					if v:FindFirstChild("HumanoidRootPart") and root then
+						if (root.Position-v:FindFirstChild("HumanoidRootPart").Position).Magnitude<range then
+							pcall(function()
+								local target = v:FindFirstChild("HumanoidRootPart")
+								local camera = workspace:WaitForChild("Camera")
+								
+								root.CFrame = CFrame.new(target.Position.X-target.CFrame.LookVector.X*5,target.Position.Y+1,target.Position.Z-target.CFrame.LookVector.Z*5)
+								camera.CFrame = CFrame.lookAt(Vector3.new(root.Position.X-root.CFrame.LookVector.X*2.5,root.Position.Y,root.Position.Z-root.CFrame.LookVector.Z*2.5),target.Position)
+								root.CFrame = CFrame.lookAt(root.Position, target.Position)
+								root.Velocity = Vector3.new(0,0,0)
+								
+								game:GetService("Players").LocalPlayer.Character.Communicate:FireServer(unpack({{["Goal"] = "LeftClick",["Mobile"] = true}}))
+								game:GetService("Players").LocalPlayer.Character.Communicate:FireServer(unpack({[1] = {["Goal"] = "LeftClickRelease",["Mobile"] = true}}))
+							end)
+						end
+					end
+				end
+			end
+		end
+	end
+end)
+
+function cmdsetup(player)
+	if game:GetService("Players"):FindFirstChild(player) then
+		game:GetService("Players"):FindFirstChild(player).Chatted:Connect(function(msg)
+			if player == username or player == adminuser then
+				local text = string.lower(msg)
+				
+				-- Summon Command
+				if string.find(text, ":summon") then
+					local args = string.split(msg, " ")
+					local plrfound = false
+					
+					if args[2] then
+						for i,v in pairs(game:GetService("Players"):GetChildren()) do
+							if v.Name == args[2] then
+								plrfound = true
+								username = args[2]
+								floating = true
+							end
+						end
+					end
+					if not args[2] or plrfound == false then
+						username = adminuser
+						floating = true
+					end
+				end
+				
+				-- Unsummon Command
+				if string.find(text, ":unsummon") then
+					floating = false
+				end
+				
+				--Setmode Command
+				if string.find(text, ":setmode") then
+					local args = string.split(text, " ")
+					
+					if args[2] then
+						if args[2] == "peaceful" then
+							mode = "peaceful"
+						end
+						if args[2] == "attack" then
+							mode = "attack"
+						end
+					end
+				end
+				
+				-- Changeuser Command
+				if string.find(text, ":changeuser") then
+					local args = string.split(msg, " ")
+					local plrfound = false
+					
+					if args[2] then
+						if args[2] then
+							for i,v in pairs(game:GetService("Players"):GetChildren()) do
+								if v.Name == args[2] then
+									plrfound = true
+									username = args[2]
+									cmdsetup(username)
+									floating = true
+								end
+							end
+						end
+					end
+					if not args[2] or plrfound == false then
+						username = adminuser
+						floating = true
+					end
+				end
+			end
+		end)
+	else
+		print("Player not found")
+	end
+end
+cmdsetup(adminuser)
